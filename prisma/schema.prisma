@@ -1,0 +1,164 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum EntryStatus {
+  POSTED
+  REVERSED
+  DRAFT
+}
+
+enum ActionType {
+  CREATE
+  MODIFY
+  CANCEL
+}
+
+enum TaxCategory {
+  TAX_10
+  TAX_8_REDUCED
+  TAX_EXEMPT
+  TAX_NON
+}
+
+enum TaxDeductionRate {
+  PERCENT_100
+  PERCENT_80
+  PERCENT_50
+  PERCENT_0
+}
+
+enum CostType {
+  VARIABLE
+  FIXED
+  NONE
+}
+
+enum StatementStatus {
+  UNPROCESSED
+  SUGGESTED
+  PROCESSED
+  IGNORED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+}
+
+model Account {
+  id           String        @id @default(uuid())
+  code         String        @unique
+  name         String
+  category     String        // Asset, Liability, Equity, Revenue, Expense, CostOfSales
+  costType     CostType      @default(FIXED)
+  journalLines JournalLine[]
+  createdAt    DateTime      @default(now())
+}
+
+model JournalEntry {
+  id              String         @id @default(uuid())
+  entryNumber     Int            @default(autoincrement())
+  entryDate       DateTime
+  description     String?
+  status          EntryStatus    @default(POSTED)
+  receiptImageUrl String?
+  correctedFromId String?
+  correctedFrom   JournalEntry?  @relation("CorrectionHistory", fields: [correctedFromId], references: [id])
+  correctedTo     JournalEntry[] @relation("CorrectionHistory")
+  createdAt       DateTime       @default(now())
+  createdById     String
+  lines           JournalLine[]
+  auditLogs       AuditLog[]
+
+  @@index([entryNumber])
+}
+
+model JournalLine {
+  id               String           @id @default(uuid())
+  journalEntryId   String
+  journalEntry     JournalEntry     @relation(fields: [journalEntryId], references: [id], onDelete: Restrict)
+  accountId        String
+  account          Account          @relation(fields: [accountId], references: [id])
+  debitAmount      Decimal          @default(0) @db.Decimal(19, 4)
+  creditAmount     Decimal          @default(0) @db.Decimal(19, 4)
+  taxCategory      TaxCategory      @default(TAX_10)
+  taxRate          Decimal          @default(0.10) @db.Decimal(5, 4)
+  taxAmount        Decimal          @default(0) @db.Decimal(19, 4)
+  taxDeductionRate TaxDeductionRate @default(PERCENT_100)
+  vendorInvoiceNo  String?          @db.VarChar(14)
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  journalEntryId String
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Restrict)
+  action         ActionType
+  reason         String
+  performedBy    String
+  timestamp      DateTime     @default(now())
+  snapshotJson   Json
+}
+
+model BankStatement {
+  id                   String          @id @default(uuid())
+  transactionDate      DateTime
+  description          String
+  amount               Decimal         @db.Decimal(19, 4)
+  balance              Decimal?        @db.Decimal(19, 4)
+  bankAccountName      String
+  status               StatementStatus @default(UNPROCESSED)
+  suggestedAccountCode String?
+  suggestedTaxCategory TaxCategory?
+  matchedRuleId        String?
+  matchedRule          AutoJournalRule? @relation(fields: [matchedRuleId], references: [id])
+  createdJournalEntryId String?
+  createdAt            DateTime        @default(now())
+}
+
+model AutoJournalRule {
+  id          String          @id @default(uuid())
+  keyword     String
+  accountCode String
+  taxCategory TaxCategory     @default(TAX_10)
+  description String?
+  priority    Int             @default(100)
+  useCount    Int             @default(0)
+  statements  BankStatement[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([keyword])
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  invoiceNumber   String        @unique
+  issueDate       DateTime
+  dueDate         DateTime
+  clientName      String
+  clientInvoiceNo String?
+  totalAmount     Decimal       @db.Decimal(19, 4)
+  taxAmount       Decimal       @db.Decimal(19, 4)
+  status          InvoiceStatus @default(DRAFT)
+  items           InvoiceItem[]
+  journalEntryId  String?
+  createdAt       DateTime      @default(now())
+}
+
+model InvoiceItem {
+  id          String      @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice     @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  itemName    String
+  quantity    Int         @default(1)
+  unitPrice   Decimal     @db.Decimal(19, 4)
+  amount      Decimal     @db.Decimal(19, 4)
+  taxCategory TaxCategory @default(TAX_10)
+}
