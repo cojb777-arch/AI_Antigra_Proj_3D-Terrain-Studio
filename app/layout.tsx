@@ -10,6 +10,10 @@ import {
   Building2,
   Settings,
   Sparkles,
+  DollarSign,
+  Activity,
+  Layers,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export const metadata = {
@@ -21,7 +25,11 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
   { href: '/journal-entries', label: '仕訳高速入力', icon: Table },
   { href: '/receipts/unapproved', label: 'AI領収書レビュー', icon: Receipt, badge: '3件未承認' },
+  { href: '/reports/cashflow', label: 'キャッシュフロー計算書', icon: DollarSign },
+  { href: '/reports/working-capital', label: '運転資金管理 (経常・長期)', icon: Layers },
+  { href: '/reports/indicators', label: '経営・財務各種指標 (ROE/PER)', icon: Activity },
   { href: '/reports/cvp', label: '損益分岐点 (CVP) 分析', icon: TrendingUp },
+  { href: '/reports/monthly-trial-balance', label: '月次推移試算表', icon: FileSpreadsheet },
   { href: '/reports/financial-statements', label: '決算書 (B/S・P/L)', icon: FileBarChart },
 ];
 
@@ -36,7 +44,7 @@ export default function RootLayout({
         <div className="flex h-screen overflow-hidden">
           {/* サイドバーナビゲーション */}
           <aside className="w-64 bg-slate-950 text-white flex flex-col justify-between shrink-0 no-print border-r border-slate-800">
-            <div>
+            <div className="overflow-y-auto">
               {/* ブランドロゴ */}
               <Link href="/dashboard" className="p-5 border-b border-slate-800/80 flex items-center gap-3 hover:bg-slate-900/50 transition">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
@@ -56,7 +64,7 @@ export default function RootLayout({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-white transition-all group"
+                      className="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-900 hover:text-white transition-all group"
                     >
                       <div className="flex items-center gap-3">
                         <Icon className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition" />

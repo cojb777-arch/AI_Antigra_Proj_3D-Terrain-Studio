@@ -9,21 +9,28 @@ import {
   AlertCircle,
   Sparkles,
   ShieldCheck,
-  CheckCircle2,
+  DollarSign,
+  Activity,
+  Layers,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { calculateCvpFromRawValues } from '@/services/cvpAnalysis';
+import { calculateFinancialIndicators } from '@/services/financialIndicators';
 import { INITIAL_POSTED_JOURNALS, INITIAL_UNAPPROVED_ENTRIES } from '@/services/mockAccountingData';
+import { BASE_FINANCIAL_DATA } from '@/services/mockFinancialData';
 
 export default function DashboardPage() {
-  const currentSales = 24200000;
-  const currentVariableCost = 8470000;
-  const currentFixedCost = 9680000;
+  const currentSales = 48000000;
+  const currentVariableCost = 16800000;
+  const currentFixedCost = 19200000;
 
   const cvpData = calculateCvpFromRawValues(
     currentSales,
     currentVariableCost,
     currentFixedCost
   );
+
+  const indicators = calculateFinancialIndicators(BASE_FINANCIAL_DATA);
 
   const fmt = (v: string | number) => `¥${Number(v).toLocaleString()}`;
 
@@ -33,13 +40,13 @@ export default function DashboardPage() {
       <div className="flex flex-wrap justify-between items-end gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">会計ダッシュボード</h1>
+            <h1 className="text-2xl font-bold text-slate-900">会計 ＆ 財務分析ダッシュボード</h1>
             <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-bold">
               2026年度 進行期
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            最新のAI領収書解析タスク・複式簿記残高・損益分岐点（CVP）分析のサマリー
+            AI領収書レビュー・複式簿記・キャッシュフロー・運転資金・財務健全性指標（ROE/ROA/PER）の統合管理
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -48,7 +55,7 @@ export default function DashboardPage() {
             className="px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl hover:bg-amber-400 transition shadow-sm flex items-center gap-1.5"
           >
             <Sparkles className="w-4 h-4" />
-            AI領収書をレビュー ({INITIAL_UNAPPROVED_ENTRIES.length}件)
+            AI領収書レビュー ({INITIAL_UNAPPROVED_ENTRIES.length}件)
           </Link>
           <Link
             href="/journal-entries"
@@ -60,27 +67,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. 最重要KPIサマリーカード群 */}
+      {/* 2. 最重要KPIサマリーカード群 (財務・運転資金・CF) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-2">
-          <span className="text-xs text-slate-500 font-medium">当期売上高（確定）</span>
-          <p className="text-2xl font-mono font-bold text-slate-900">{fmt(cvpData.sales)}</p>
+          <span className="text-xs text-slate-500 font-medium">年間売上高（進行期）</span>
+          <p className="text-2xl font-mono font-bold text-slate-900">{fmt(currentSales)}</p>
           <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-0.5">
-            <ArrowUpRight className="w-3.5 h-3.5" /> 前年同期比 +14.2%
+            <ArrowUpRight className="w-3.5 h-3.5" /> 営業利益: {fmt(BASE_FINANCIAL_DATA.operatingIncome)}
           </span>
         </div>
 
         <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-2">
-          <span className="text-xs text-slate-500 font-medium">損益分岐点売上高 (BEP)</span>
-          <p className="text-2xl font-mono font-bold text-blue-600">{fmt(cvpData.breakEvenPointSales)}</p>
-          <span className="text-[11px] text-slate-400">黒字化ライン (固定費÷限界利益率)</span>
+          <span className="text-xs text-slate-500 font-medium">経常運転資金 (要立替資金)</span>
+          <p className="text-2xl font-mono font-bold text-blue-600">{fmt(indicators.operatingWorkingCapital)}</p>
+          <span className="text-[11px] text-slate-400">月商の {indicators.workingCapitalSalesRatio} か月分</span>
         </div>
 
         <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-2">
-          <span className="text-xs text-slate-500 font-medium">経営安全率</span>
-          <p className="text-2xl font-mono font-bold text-slate-900">{cvpData.safetyMarginRatio}%</p>
-          <span className="text-[11px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 inline-block">
-            安全余裕額: {fmt(cvpData.safetyMarginAmount)}
+          <span className="text-xs text-slate-500 font-medium">ROE ＆ 自己資本比率</span>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-mono font-bold text-slate-900">{indicators.roe}%</p>
+            <span className="text-xs font-mono text-emerald-600 font-bold">({indicators.equityRatio}%)</span>
+          </div>
+          <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 inline-block">
+            財務スコア: S (極めて健全)
           </span>
         </div>
 
@@ -100,111 +110,108 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 3. クイックアクション & 機能ショートカットカード */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* カード 1: AI自動記帳 */}
-        <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4 hover:border-blue-400 hover:shadow-md transition">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
-            <Receipt className="w-6 h-6" />
+      {/* 3. 主要財務レポート クイックアクセス 6連カード */}
+      <div>
+        <h2 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-blue-600" />
+          財務・経営分析モジュール
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* カード 1: キャッシュフロー計算書 */}
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-emerald-400 hover:shadow-md transition">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+              <DollarSign className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">キャッシュフロー計算書 (年度/月次)</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                営業・投資・財務CFおよび現預金残高の12か月推移を可視化します。
+              </p>
+            </div>
+            <Link href="/reports/cashflow" className="inline-block text-xs font-bold text-emerald-600 hover:underline">
+              レポートを開く ➔
+            </Link>
           </div>
-          <div>
-            <h3 className="font-bold text-sm text-slate-900">AI 領収書自動記帳 (未承認レビュー)</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              領収書原本プレビューとAI解析フォームを並べて、修正・一括承認（POSTED）します。
-            </p>
-          </div>
-          <Link
-            href="/receipts/unapproved"
-            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700"
-          >
-            レビュー画面を開く ➔
-          </Link>
-        </div>
 
-        {/* カード 2: 財務諸表 (B/S・P/L) */}
-        <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4 hover:border-emerald-400 hover:shadow-md transition">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
-            <FileBarChart className="w-6 h-6" />
+          {/* カード 2: 運転資金管理 */}
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-blue-400 hover:shadow-md transition">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">経常運転資金 ＆ 長期運転資金表</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                立替資金の月商倍率と中長期の資金ショートリスクを事前判定します。
+              </p>
+            </div>
+            <Link href="/reports/working-capital" className="inline-block text-xs font-bold text-blue-600 hover:underline">
+              運転資金レポートへ ➔
+            </Link>
           </div>
-          <div>
-            <h3 className="font-bold text-sm text-slate-900">決算書 (B/S・P/L) レポート</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              リアルタイムの貸借対照表と損益計算書を正式な財務諸表フォーマットで確認・印刷します。
-            </p>
-          </div>
-          <Link
-            href="/reports/financial-statements"
-            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700"
-          >
-            決算書を表示 ➔
-          </Link>
-        </div>
 
-        {/* カード 3: CVP分析 */}
-        <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4 hover:border-purple-400 hover:shadow-md transition">
-          <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
-            <TrendingUp className="w-6 h-6" />
+          {/* カード 3: 経営各種指標 (ROE/PER) */}
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-indigo-400 hover:shadow-md transition">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+              <Activity className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">経営・財務指標スコアボード</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                ROE・ROA・流動比率・自己資本比率・PER/PBR株価シミュレーション。
+              </p>
+            </div>
+            <Link href="/reports/indicators" className="inline-block text-xs font-bold text-indigo-600 hover:underline">
+              指標スコアボードへ ➔
+            </Link>
           </div>
-          <div>
-            <h3 className="font-bold text-sm text-slate-900">損益分岐点 (CVP) 分析</h3>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              変動費・固定費の構造分析と、目標営業利益に必要な売上高シミュレーションを実行します。
-            </p>
+
+          {/* カード 4: 損益分岐点 (CVP) */}
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-purple-400 hover:shadow-md transition">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">損益分岐点 (CVP) 分析</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                固定費・変動費の比率分析と、売上低下に対する経営安全率を計算。
+              </p>
+            </div>
+            <Link href="/reports/cvp" className="inline-block text-xs font-bold text-purple-600 hover:underline">
+              CVPシミュレーターへ ➔
+            </Link>
           </div>
-          <Link
-            href="/reports/cvp"
-            className="inline-flex items-center gap-1 text-xs font-bold text-purple-600 hover:text-purple-700"
-          >
-            分析シミュレーターへ ➔
-          </Link>
-        </div>
-      </div>
 
-      {/* 4. 最近の記帳仕訳履歴 */}
-      <div className="p-6 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Table className="w-4 h-4 text-slate-500" />
-            最近の確定仕訳伝票 (POSTED)
-          </h3>
-          <Link href="/journal-entries" className="text-xs font-semibold text-blue-600 hover:underline">
-            全伝票を表示 ➔
-          </Link>
-        </div>
+          {/* カード 5: 月次推移試算表 */}
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-sky-400 hover:shadow-md transition">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
+              <FileSpreadsheet className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">月次推移試算表 (T/B)</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                全勘定科目の1月〜12月の発生額・残高推移を一覧表示します。
+              </p>
+            </div>
+            <Link href="/reports/monthly-trial-balance" className="inline-block text-xs font-bold text-sky-600 hover:underline">
+              月次試算表を見る ➔
+            </Link>
+          </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500">
-                <th className="py-2.5 px-3 font-semibold">伝票番号</th>
-                <th className="py-2.5 px-3 font-semibold">取引日</th>
-                <th className="py-2.5 px-3 font-semibold">借方科目</th>
-                <th className="py-2.5 px-3 font-semibold text-right">金額 (円)</th>
-                <th className="py-2.5 px-3 font-semibold">貸方科目</th>
-                <th className="py-2.5 px-3 font-semibold">摘要</th>
-                <th className="py-2.5 px-3 font-semibold text-center">状態</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {INITIAL_POSTED_JOURNALS.map((j) => (
-                <tr key={j.id} className="hover:bg-slate-50/80">
-                  <td className="py-2.5 px-3 font-mono text-slate-500">#{j.entryNumber}</td>
-                  <td className="py-2.5 px-3 font-mono">{j.entryDate}</td>
-                  <td className="py-2.5 px-3 font-medium text-slate-800">{j.debitAccountName}</td>
-                  <td className="py-2.5 px-3 font-mono font-bold text-right text-slate-900">
-                    ¥{Number(j.debitAmount).toLocaleString()}
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-600">{j.creditAccountName}</td>
-                  <td className="py-2.5 px-3 text-slate-700">{j.description}</td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
-                      確定
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {/* カード 6: 決算書 (B/S・P/L) */}
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 hover:border-teal-400 hover:shadow-md transition">
+            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100">
+              <FileBarChart className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">決算書 (B/S・P/L) ＆ 帳票印刷</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                正式な財務諸表フォーマットで貸借対照表・損益計算書を印刷出力。
+              </p>
+            </div>
+            <Link href="/reports/financial-statements" className="inline-block text-xs font-bold text-teal-600 hover:underline">
+              決算書レポートへ ➔
+            </Link>
+          </div>
         </div>
       </div>
     </div>
