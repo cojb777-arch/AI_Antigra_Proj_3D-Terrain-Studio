@@ -1,0 +1,22 @@
+{
+  "name": "terrain-3d-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "three": "^0.174.0"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.16",
+    "@types/three": "^0.174.0",
+    "@vitejs/plugin-basic-ssl": "^1.2.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0"
+  }
+}
