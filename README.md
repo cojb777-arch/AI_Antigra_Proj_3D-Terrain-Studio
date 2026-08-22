@@ -2,6 +2,8 @@
 
 世界中の国・州・都道府県・山岳地帯の標高データ（DEM）からリアルタイムに3D地形マップを生成し、**① 3Dプリンターでの立体造形（密閉STL）** および **② Meta Quest 2 などのVRゴーグルによる立体没入体験（WebXR）** を実現するWebアプリケーションです。
 
+Cloudflare Workers (Workers Assets) に完全対応しています。
+
 ---
 
 ## 主な機能
@@ -32,17 +34,23 @@
 
 ---
 
-## 起動方法
+## 開発・ローカル起動
 
 ```bash
-cd terrain-3d-studio
 npm run dev
 ```
 
-ターミナルに表示されるローカルURL（例: `https://localhost:5173` または `https://<PCのIPアドレス>:5173`）にアクセスしてください。
+ブラウザで `http://localhost:5173` を開きます。
 
-### Meta Quest 2 からのアクセス手順
-1. PCとQuest 2を同一のWi-Fiネットワーク（同じルーター）に接続します。
-2. Quest 2の「Meta Quest Browser」を開きます。
-3. アドレスバーに `https://<PCのローカルIPアドレス>:5173` を入力して開きます。
-4. 画面右上の **「🥽 VRで見る (Meta Quest 2)」** ボタンを押します。
+---
+
+## 🚀 Cloudflare Workers へのデプロイ
+
+### コマンド一発でデプロイする場合
+```bash
+npm run deploy
+```
+*(※ `npm run build` を実行後、Cloudflare Workers に静的アセットとともに自動デプロイされます)*
+
+### GitHub連携で自動デプロイする場合
+Cloudflare ダッシュボードの **Workers & Pages** → **Create application** から本リポジトリを連携することで、Git push時に自動デプロイされます。
