@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>3D Terrain Studio | 3D地形マップ生成・3Dプリント・Quest 2 VR</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- HEADER -->
+      <header class="app-header">
+        <div class="logo">
+          <span class="logo-icon">🏔️</span>
+          <h1>3D Terrain Studio</h1>
+          <span class="badge">3D Print & VR Ready</span>
+        </div>
+        <div class="header-actions">
+          <button id="btn-guide-modal" class="btn-ghost" title="使い方とQuest 2接続ガイド">📖 接続・利用ガイド</button>
+          <div id="vr-btn-container"></div>
+        </div>
+      </header>
+
+      <!-- MAIN WORKSPACE -->
+      <main class="workspace">
+        <!-- LEFT PANEL: MAP & SELECTION -->
+        <aside class="sidebar">
+          <div class="panel-section">
+            <div class="section-title">
+              <span>📍</span> 範囲の指定
+            </div>
+            
+            <!-- Search Box -->
+            <div class="search-bar">
+              <input type="text" id="search-input" placeholder="世界中の国・県・山名 (例: 富士山, 長野県, Grand Canyon)" />
+              <button id="btn-search" class="btn-primary">検索</button>
+            </div>
+
+            <!-- Presets -->
+            <div class="presets-container">
+              <label>おすすめスポット:</label>
+              <div class="preset-chips" id="preset-chips"></div>
+            </div>
+
+            <!-- 2D Leaflet Map -->
+            <div class="map-wrapper">
+              <div id="leaflet-map"></div>
+              <div class="map-hint">💡 地図上で <b>Shift + ドラッグ</b> すると自由に矩形範囲を選択できます</div>
+            </div>
+          </div>
+
+          <!-- GENERATE BUTTON -->
+          <button id="btn-generate" class="btn-generate">
+            <span class="btn-icon">⚡</span> 3D地形を生成・更新
+          </button>
+
+          <!-- TERRAIN SETTINGS -->
+          <div class="panel-section settings-section">
+            <div class="section-title">
+              <span>⚙️</span> 地形・表示パラメータ
+            </div>
+
+            <!-- Elevation Exaggeration (起伏の誇張) -->
+            <div class="control-group">
+              <div class="control-label">
+                <span>起伏の誇張 (高さ強調倍率):</span>
+                <b id="exaggeration-val">2.5x</b>
+              </div>
+              <input type="range" id="slider-exaggeration" min="0.5" max="8.0" step="0.1" value="2.5" />
+              <div class="range-labels">
+                <span>0.5x (実寸)</span>
+                <span>2.5x (標準)</span>
+                <span>8.0x (超強調)</span>
+              </div>
+            </div>
+
+            <!-- Base Thickness -->
+            <div class="control-group">
+              <div class="control-label">
+                <span>土台の厚み (Base Margin):</span>
+                <b id="base-val">4 mm</b>
+              </div>
+              <input type="range" id="slider-base" min="1" max="15" step="1" value="4" />
+            </div>
+
+            <!-- Grid Resolution -->
+            <div class="control-group">
+              <div class="control-label">
+                <span>解像度:</span>
+                <select id="select-resolution">
+                  <option value="96">標準 (96x96 - 高速)</option>
+                  <option value="160" selected>高精細 (160x160 - 推奨)</option>
+                  <option value="256">超高精細 (256x256 - 3Dプリント用)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Texture Style -->
+            <div class="control-group">
+              <div class="control-label">
+                <span>表面スタイル:</span>
+              </div>
+              <div class="texture-selector">
+                <button class="btn-tex active" data-type="satellite">🛰️ 衛星写真</button>
+                <button class="btn-tex" data-type="elevation">🌈 標高カラー</button>
+                <button class="btn-tex" data-type="clay">🧱 3Dプリント(白)</button>
+                <button class="btn-tex" data-type="osm">🗺️ 標準地図</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- RIGHT PANEL: 3D VIEWPORT -->
+        <section class="viewport-area">
+          <div id="three-canvas-container"></div>
+
+          <!-- VIEWPORT OVERLAY CONTROLS -->
+          <div class="viewport-toolbar">
+            <!-- View Angle Presets (PC / スマホ両対応) -->
+            <div class="view-preset-group">
+              <button id="btn-view-iso" class="btn-tool active" title="斜め45°鳥瞰視点">📐 斜め鳥瞰 (45°)</button>
+              <button id="btn-view-top" class="btn-tool" title="真上からの平面視点">⬆️ 真上</button>
+              <button id="btn-view-side" class="btn-tool" title="真横からの断面視点">➡️ 横アングル</button>
+            </div>
+
+            <!-- Action Tools -->
+            <div class="action-tools-group">
+              <button id="btn-capture-png" class="btn-tool btn-highlight" title="現在の斜め視点を高解像度PNG画像として保存">
+                📷 3D画像を保存 (PNG)
+              </button>
+            </div>
+          </div>
+
+          <!-- BOTTOM EXPORT BAR -->
+          <div class="export-bar">
+            <div class="terrain-stats" id="terrain-stats">
+              <span>標高差: <b>- m</b></span>
+              <span>最高標高: <b>- m</b></span>
+              <span>三角形数: <b>-</b></span>
+            </div>
+
+            <div class="export-buttons">
+              <button id="btn-export-stl" class="btn-export primary" title="Cura / Bambu Studio等のスライサーで使える完全密閉ソリッドモデル">
+                <span class="icon">🖨️</span> 3Dプリント用STL (バイナリ)
+              </button>
+              <button id="btn-export-obj" class="btn-export secondary" title="フルカラーテクスチャ付き3Dモデル">
+                <span class="icon">📦</span> OBJ形式で保存
+              </button>
+            </div>
+          </div>
+
+          <!-- LOADING OVERLAY -->
+          <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loading-text">地形データを取得・構築中...</div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="progress-bar-fill"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- GUIDE MODAL -->
+      <div id="guide-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h2>📖 3D Terrain Studio 利用ガイド</h2>
+            <button id="btn-close-modal" class="btn-close">×</button>
+          </div>
+          <div class="modal-body">
+            <h3>🖨️ ① 3Dプリンターで立体造形する手順</h3>
+            <ol>
+              <li>お好きな場所を検索（または地図上で範囲指定）し、<b>「3D地形を生成」</b>を押します。</li>
+              <li><b>「起伏の誇張」</b>スライダーでお好みの高低差に調整します（2.0x〜3.5xが模型として見栄えが良くなります）。</li>
+              <li><b>「3Dプリント用STL (バイナリ)」</b>をクリックしてダウンロードします。</li>
+              <li><b>Cura, PrusaSlicer, Bambu Studio</b>などのスライサーソフトでSTLファイルを開くと、自動で底面がフラットに接地し、そのままスライス・印刷できます。</li>
+            </ol>
+
+            <hr />
+
+            <h3>🥽 ② Meta Quest 2（VRゴーグル）で立体視する手順</h3>
+            <ol>
+              <li>PCとQuest 2を同じWi-Fi（同一LAN）に接続します。</li>
+              <li>Quest 2を装着し、内蔵の<b>「Meta Quest Browser」</b>を起動します。</li>
+              <li>URL欄にPCのローカルIP（例: <code>https://&lt;PCのIP&gt;:5173</code>）を入力してアクセスします。<br />
+                <small style="color: #94a3b8;">※自己署名証明書の警告が出た場合は「詳細設定」→「アクセスを続行」を選択してください。</small>
+              </li>
+              <li>右上の<b>「🥽 VRで見る (Meta Quest 2)」</b>ボタンを押すと、目の前の空中に立体地形模型が浮かび上がります！</li>
+              <li><b>コントローラー操作:</b>
+                <ul>
+                  <li><b>グリップ / トリガー長押し:</b> 地形模型を手で掴んで空中で自由に回転・移動</li>
+                  <li><b>両手で掴んで広げる / 縮める:</b> 拡大・縮小（ジオラマサイズ〜巨大スケール）</li>
+                </ul>
+              </li>
+            </ol>
+
+            <hr />
+
+            <h3>📱 ③ デスクトップPC・スマートフォンでの操作</h3>
+            <ul>
+              <li><b>マウス左ドラッグ / スマホ1本指スワイプ:</b> 360度自由な角度（斜め鳥瞰・見上げ・横等）から立体回転</li>
+              <li><b>ホイール / ピンチイン・アウト:</b> 拡大・縮小</li>
+              <li><b>マウス右ドラッグ / スマホ2本指ドラッグ:</b> 平行移動（パン）</li>
+              <li><b>「📷 3D画像を保存 (PNG)」:</b> 斜めから眺めた迫力ある地形画像をそのままPNG画像としてダウンロード保存</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
